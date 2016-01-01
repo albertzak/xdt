@@ -3,6 +3,7 @@ var assert = require('assert');
 var moment = require('moment');
 
 var fixture = 'test/fixtures/gdt2_1-1.txt';
+var fixture2 = 'test/fixtures/gdt2_1-2.txt';
 
 describe('Xdt', function() {
   describe('.open', function () {
@@ -33,20 +34,20 @@ describe('Xdt', function() {
 
   describe('.parse', function () {
     var xdt = null;
-    var parsed = null;
+    var fields = null;
 
     beforeEach(function(done) {
       xdt = new Xdt();
       xdt.open(fixture, function(err, xdt) {
-        parsed = xdt.parse(xdt.raw);
+        fields = xdt.parse(xdt.raw);
         done();
         return;
       });
     });
 
     it('should parse raw fields', function() {
-      assert.equal(parsed.length, 12);
-      assert.equal(parsed[0].field, '8000');
+      assert.equal(fields.length, 12);
+      assert.equal(fields[0].field, '8000');
     });
   });
 
@@ -62,7 +63,7 @@ describe('Xdt', function() {
       });
     });
 
-    it('should parse raw fields', function() {
+    it('should parse patient record', function() {
       assert.equal(xdt.patient.id, '02345');
       assert.equal(xdt.patient.firstName, 'Franz');
       assert.equal(xdt.patient.lastName, 'Mustermann');
@@ -70,5 +71,43 @@ describe('Xdt', function() {
       assert.equal(xdt.patient.birthday.getTime(), moment('1945-10-01').toDate().getTime());
     });
   });
+
+  describe('.first', function () {
+    var xdt = null;
+
+    beforeEach(function(done) {
+      xdt = new Xdt();
+      xdt.open(fixture, function(err, obj) {
+        xdt = obj;
+        done();
+        return;
+      });
+    });
+
+    it('should find the first by id', function() {
+      assert.equal(xdt.first('8316'), 'PRAX_EDV')
+    });
+  });
+
+  describe('.find', function () {
+    var xdt = null;
+
+    beforeEach(function(done) {
+      xdt = new Xdt();
+      xdt.open(fixture2, function(err, obj) {
+        xdt = obj;
+        done();
+        return;
+      });
+    });
+
+    it('should find all fields with the same id', function() {
+      assert.deepEqual(xdt.find('6220'), [
+        'Dies ist ein zweizeiliger',
+        'Befund zur 24h-Blutdruckmessung.'
+      ]);
+    });
+  });
+
 
 });

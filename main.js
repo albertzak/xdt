@@ -28,7 +28,7 @@ var Xdt = function(options) {
     if (typeof options === 'undefined')
       options = {}
     if ( ! options.encoding)
-      options.encoding = 'ISO-8859-1';
+      options.encoding = 'ISO-8859-15';
 
     this.options = options;
 
@@ -41,7 +41,7 @@ var Xdt = function(options) {
           if (err) return callback(err, _this);
 
           _this.raw = iconv.decode(buffer, options.encoding);
-          _this.parsed = _this.parse();
+          _this.fields = _this.parse();
           _this.patient = _this.patient();
           return callback(null, _this);
         });
@@ -64,7 +64,7 @@ var Xdt = function(options) {
       return matches;
     };
 
-    this.patient = function(parsed) {
+    this.patient = function() {
       return {
         id: this.first(FIELDS.id),
         firstName: this.first(FIELDS.firstName),
@@ -76,11 +76,19 @@ var Xdt = function(options) {
 
     this.first = function(field) {
       var field;
-      field = _.find(this.parsed, function(p) {
+      field = _.find(this.fields, function(p) {
         return p.field === field;
       });
 
       return field && field.value;
+    };
+
+    this.find = function(field) {
+      var field;
+      return _(this.fields)
+        .filter(function(p) { return p.field === field; })
+        .map(function(p) { return p.value; })
+        .value();
     };
 
 
