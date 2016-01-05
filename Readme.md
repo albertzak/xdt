@@ -24,6 +24,20 @@ Parse German healthcare data interchange formats GDT, LDT and BDT. This package 
     });
 ```
 
+## File Watcher
+
+```JavaScript
+    var Xdt = require('xdt');
+    var bdt = new Xdt();
+
+    bdt = bdt.watch('path to directory, file, or array', { delete: true }, function(err, doc) {
+      doc.patient.id;
+      doc.patient.lastName;
+    });
+
+    bdt.watcher.close();
+```
+
 ## Acknowledgements
 
 Thank you, Levin Alexander, for all the hard work of figuring out how the xDT format works.

@@ -1,9 +1,13 @@
 var Xdt = require('../main.js');
 var assert = require('assert');
 var moment = require('moment');
+var fs = require('fs');
+var path = require('path');
 
 var fixture = 'test/fixtures/gdt2_1-1.txt';
 var fixture2 = 'test/fixtures/gdt2_1-2.txt';
+var watchDir = path.resolve('test/fixtures/watch');
+var watchFile = path.join(watchDir, '001.gdt');
 
 describe('Xdt', function() {
   describe('.open', function () {
@@ -30,6 +34,64 @@ describe('Xdt', function() {
         return;
       });
     });
+  });
+
+
+  describe('.watch', function () {
+    var xdt = null;
+
+    beforeEach(function() {
+      xdt = new Xdt();
+    });
+
+    it('parses added files', function(done) {
+      xdt.watch(watchDir, { delete: true }, function(err, doc) {
+        assert.equal(doc.patient.lastName, 'Mustermann');
+        done();
+        return;
+      });
+
+      setTimeout(function() {
+        fs.createReadStream(fixture).pipe(fs.createWriteStream(watchFile));
+      }, 100);
+    });
+
+    it('optionally deletes file after parsing', function(done) {
+      xdt.watch(watchDir, { delete: true }, function(err, doc) {
+        assert.equal(doc.patient.lastName, 'Mustermann');
+        assert.equal(fs.existsSync(watchFile), false);
+        done();
+        return;
+      });
+
+      setTimeout(function() {
+        fs.createReadStream(fixture).pipe(fs.createWriteStream(watchFile));
+      }, 100);
+    });
+
+    it('optionally keeps file after parsing', function(done) {
+      xdt.watch(watchDir, { delete: false }, function(err, doc) {
+        assert.equal(doc.patient.lastName, 'Mustermann');
+        assert.equal(fs.existsSync(watchFile), true);
+        fs.unlinkSync(watchFile);
+        done();
+        return;
+      });
+
+      setTimeout(function() {
+        fs.createReadStream(fixture).pipe(fs.createWriteStream(watchFile));
+      }, 100);
+    });
+
+
+    it('exposes function to close watcher', function() {
+      assert.doesNotThrow(function() {
+        var bdt = xdt.watch(watchDir, { delete: true }, function(err, doc) { });
+        bdt.watcher.close();
+      });
+    });
+
+
   });
 
   describe('.parse', function () {

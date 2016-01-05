@@ -13,12 +13,13 @@
     "type": "git",
     "url": "git://github.com/albertzak/xdt.git"
   },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "main.js",
   "scripts": {
     "test": "node ./node_modules/mocha/bin/mocha test/test.js"
   },
   "dependencies": {
+    "chokidar": "^1.4.2",
     "fs-access": "^1.0.0",
     "iconv-lite": "0.4.11",
     "lodash": "^3.10.1",

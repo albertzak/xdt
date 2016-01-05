@@ -5,6 +5,7 @@ var fsAccess = require('fs-access');
 var iconv = require('iconv-lite');
 var _ = require('lodash');
 var moment = require('moment');
+var chokidar = require('chokidar');
 
 var Xdt = function(options) {
 
@@ -31,6 +32,7 @@ var Xdt = function(options) {
       options.encoding = 'ISO-8859-15';
 
     this.options = options;
+    this.watcher = null;
 
     this.open = function(path, callback) {
       var _this = this;
@@ -46,6 +48,37 @@ var Xdt = function(options) {
           return callback(null, _this);
         });
       });
+
+      return this;
+    };
+
+    this.watch = function(path, watchOptions, callback) {
+      var _this = this;
+
+      this.watcher = chokidar.watch(path, {
+        ignored: /[\/\\]\./,
+        ignoreInitial: true,
+        persistent: true
+      });
+
+      this.watcher
+        .on('error', function(err) { callback(err, _this); })
+        .on('add', function(path) {
+          _this.open(path, function(err, doc) {
+            if (err) return callback(err, _this);
+
+            if (watchOptions.delete) {
+              fs.unlink(path, function(err) {
+                if (err) return callback(err, _this);
+                callback(null, doc);
+              });
+            } else {
+              callback(null, doc);
+            }
+          });
+        });
+
+      return this;
     };
 
     this.parse = function() {
