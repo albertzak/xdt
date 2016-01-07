@@ -4,10 +4,10 @@ var moment = require('moment');
 var fs = require('fs');
 var path = require('path');
 
-var fixture = 'test/fixtures/gdt2_1-1.txt';
-var fixture2 = 'test/fixtures/gdt2_1-2.txt';
+var fixture = path.resolve('test/fixtures/gdt2_1-1.txt');
+var fixture2 = path.resolve('test/fixtures/gdt2_1-2.txt');
 var watchDir = path.resolve('test/fixtures/watch');
-var watchFile = path.join(watchDir, '001.gdt');
+var watchFile = path.join(watchDir, 'watch.gdt');
 
 describe('Xdt', function() {
   describe('.open', function () {
@@ -45,14 +45,39 @@ describe('Xdt', function() {
     });
 
     it('parses added files', function(done) {
+      if (fs.existsSync(watchFile)) fs.unlinkSync(watchFile);
+
       xdt.watch(watchDir, { delete: true }, function(err, doc) {
         assert.equal(doc.patient.lastName, 'Mustermann');
+        doc.watcher.close();
         done();
         return;
       });
 
       setTimeout(function() {
         fs.createReadStream(fixture).pipe(fs.createWriteStream(watchFile));
+      }, 100);
+    });
+
+    it('parses multiple added files', function(done) {
+      if (fs.existsSync(watchFile + '.1')) fs.unlinkSync(watchFile + '.1');
+      if (fs.existsSync(watchFile + '.2')) fs.unlinkSync(watchFile + '.2');
+
+      var parsedFiles = [];
+
+      xdt.watch(watchDir, { delete: true }, function(err, doc) {
+        assert.equal(doc.patient.lastName, 'Mustermann');
+        parsedFiles.push(doc);
+
+        if (parsedFiles.length === 2) {
+          doc.watcher.close();
+          return done();
+        }
+      });
+
+      setTimeout(function() {
+        fs.createReadStream(fixture).pipe(fs.createWriteStream(watchFile + '.1'));
+        fs.createReadStream(fixture2).pipe(fs.createWriteStream(watchFile + '.2'));
       }, 100);
     });
 

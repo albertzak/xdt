@@ -64,12 +64,13 @@ var Xdt = function(options) {
       this.watcher
         .on('error', function(err) { callback(err, _this); })
         .on('add', function(path) {
-          _this.open(path, function(err, doc) {
-            if (err) return callback(err, _this);
+          new Xdt().open(path, function(err, doc) {
+            doc.watcher = _this.watcher;
+            if (err) return callback(err, doc);
 
             if (watchOptions.delete) {
               fs.unlink(path, function(err) {
-                if (err) return callback(err, _this);
+                if (err) return callback(err, doc);
                 callback(null, doc);
               });
             } else {
