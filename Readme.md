@@ -11,31 +11,18 @@ Parse German healthcare data interchange formats GDT, LDT and BDT. This package 
 ## Basic Usage
 
 ```JavaScript
-    var Xdt = require('xdt');
-    var bdt = new Xdt();
+    var Xdt = require('xdt')
+    var bdt = new Xdt()
 
     bdt.open('001.bdt', 'ISO-8859-1', function(err, doc) {
-      doc.fields.length; // Number of fields
-      doc.fields[0].value; // Access parsed fields
-      doc.first('8316'); // Find first occurence
-      doc.find('6228'); // Find all occurences
-      doc.patient.firstName; // Parse patient record
-      doc.patient.birthday.getYear(); // DoB is a JS Date object
-    });
-```
-
-## File Watcher
-
-```JavaScript
-    var Xdt = require('xdt');
-    var bdt = new Xdt();
-
-    bdt = bdt.watch('path to directory, file, or array', { delete: true }, function(err, doc) {
-      doc.patient.id;
-      doc.patient.lastName;
-    });
-
-    bdt.watcher.close();
+      doc.fields.length // Number of fields
+      doc.fields[0].value // Access parsed fields
+      doc.first('8316') // Find first occurence
+      doc.find('6228') // Find all occurences
+      doc.patient.id // Parse patient record
+      doc.patient.firstName
+      moment(doc.patient.birthday, 'DDMMYYYY') // birthday is just a String
+    })
 ```
 
 ## Acknowledgements

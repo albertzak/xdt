@@ -1,133 +1,100 @@
-'use strict';
+'use strict'
 
-var fs = require('fs');
-var fsAccess = require('fs-access');
-var iconv = require('iconv-lite');
-var _ = require('lodash');
-var moment = require('moment');
-var chokidar = require('chokidar');
+var fs = require('fs')
+var fsAccess = require('fs-access')
+var iconv = require('iconv-lite')
 
-var Xdt = function(options) {
+var Xdt = function (options) {
+  var RX = new RegExp(
+    '^\\r?\\n?' +   // ignore leading newlines
+    '(\\d{3})' +   // line length
+    '(\\d{4})' +   // field id
+    '(.*?)' +      // field data
+    '\\r?\\n?$',  // match data until end of line or EOF
+    'mg')         // match each line
 
-    var RX = new RegExp(
-       '^\\r?\\n?'   // ignore leading newlines
-     + '(\\d{3})'    // line length
-     + '(\\d{4})'    // field id
-     + '(.*?)'       // field data
-     + '\\r?\\n?$',  // match data until end of line or EOF
-       'mg');         // match each line
+  var FIELDS = {
+    id: '3000',
+    lastName: '3101',
+    firstName: '3102',
+    birthday: '3103',
+    gender: '3110'
+  }
 
+  if (typeof options === 'undefined') {
+    options = {}
+  } if (!options.encoding) {
+    options.encoding = 'ISO-8859-15'
+  }
 
-    var FIELDS = {
-      id: '3000',
-      lastName: '3101',
-      firstName: '3102',
-      birthday: '3103',
-      gender: '3110'
-    };
+  this.options = options
+  this.watcher = null
 
-    if (typeof options === 'undefined')
-      options = {}
-    if ( ! options.encoding)
-      options.encoding = 'ISO-8859-15';
+  this.open = function (path, callback) {
+    var _this = this
 
-    this.options = options;
-    this.watcher = null;
+    fsAccess(path, function (err) {
+      if (err) { return callback(err, _this) }
+      fs.readFile(path, function (err, buffer) {
+        if (err) { return callback(err, _this) }
 
-    this.open = function(path, callback) {
-      var _this = this;
+        _this.raw = iconv.decode(buffer, options.encoding)
+        _this.fields = _this.parse()
+        _this.patient = _this.patient()
+        return callback(null, _this)
+      })
+    })
 
-      fsAccess(path, function(err) {
-        if (err) return callback(err, _this);
-        fs.readFile(path, function (err, buffer) {
-          if (err) return callback(err, _this);
+    return this
+  }
 
-          _this.raw = iconv.decode(buffer, options.encoding);
-          _this.fields = _this.parse();
-          _this.patient = _this.patient();
-          return callback(null, _this);
-        });
-      });
-
-      return this;
-    };
-
-    this.watch = function(path, watchOptions, callback) {
-      var _this = this;
-
-      this.watcher = chokidar.watch(path, {
-        ignored: /[\/\\]\./,
-        ignoreInitial: true,
-        persistent: true
-      });
-
-      this.watcher
-        .on('error', function(err) { callback(err, _this); })
-        .on('add', function(path) {
-          new Xdt().open(path, function(err, doc) {
-            doc.watcher = _this.watcher;
-            if (err) return callback(err, doc);
-
-            if (watchOptions.delete) {
-              fs.unlink(path, function(err) {
-                if (err) return callback(err, doc);
-                callback(null, doc);
-              });
-            } else {
-              callback(null, doc);
-            }
-          });
-        });
-
-      return this;
-    };
-
-    this.parse = function() {
-      var match;
-      var matches = [];
-      while ((match = RX.exec(this.raw)) !== null) {
-        match = {
-          length: parseInt(match[1]),
-          field: match[2],
-          value: match[3]
-        };
-
-        matches.push(match);
+  this.parse = function () {
+    var match
+    var matches = []
+    while ((match = RX.exec(this.raw)) !== null) {
+      match = {
+        length: parseInt(match[1]),
+        field: match[2],
+        value: match[3]
       }
 
-      return matches;
-    };
+      matches.push(match)
+    }
 
-    this.patient = function() {
-      return {
-        id: this.first(FIELDS.id),
-        firstName: this.first(FIELDS.firstName),
-        lastName: this.first(FIELDS.lastName),
-        birthday: moment(this.first(FIELDS.birthday), 'DDMMYYYY').toDate(),
-        gender: this.first(FIELDS.gender)
+    return matches
+  }
+
+  this.patient = function () {
+    return {
+      id: this.first(FIELDS.id),
+      firstName: this.first(FIELDS.firstName),
+      lastName: this.first(FIELDS.lastName),
+      birthday: this.first(FIELDS.birthday),
+      gender: this.first(FIELDS.gender)
+    }
+  }
+
+  this.first = function (searchField) {
+    for (var i = 0; i < this.fields.length; i++) {
+      if (this.fields[i].field === searchField) {
+        return this.fields[i].value
       }
-    };
+    }
+  }
 
-    this.first = function(field) {
-      var field;
-      field = _.find(this.fields, function(p) {
-        return p.field === field;
-      });
+  this.find = function (searchField) {
+    var results = []
 
-      return field && field.value;
-    };
+    for (var i = 0; i < this.fields.length; i++) {
+      if (this.fields[i].field === searchField) {
+        results.push(this.fields[i].value)
+      }
+    }
 
-    this.find = function(field) {
-      var field;
-      return _(this.fields)
-        .filter(function(p) { return p.field === field; })
-        .map(function(p) { return p.value; })
-        .value();
-    };
+    return results
+  }
 
+  return this
+}
 
-  return this;
-
-};
-
-module.exports = Xdt;
+module.exports = Xdt
