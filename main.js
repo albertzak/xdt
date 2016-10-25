@@ -48,6 +48,14 @@ var Xdt = function (options) {
     return this
   }
 
+  this.fromString = function (content) {
+    this.raw = content
+    this.fields = this.parse()
+    this.patient = this.patient()
+
+    return this
+  }
+
   this.parse = function () {
     var match
     var matches = []

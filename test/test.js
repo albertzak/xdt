@@ -33,6 +33,18 @@ describe('Xdt', function () {
     })
   })
 
+  describe('.fromString', function () {
+    var xdt = null
+
+    beforeEach(function () {
+      xdt = new Xdt()
+    })
+
+    it('should parse patient', function () {
+      assert.equal(xdt.fromString('0193101Mustermann\r\n0143102Frank').patient.firstName, 'Frank')
+    })
+  })
+
   describe('.parse', function () {
     var xdt = null
     var fields = null
