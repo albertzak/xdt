@@ -1,10 +1,6 @@
 'use strict'
 
-var fs = require('fs')
-var fsAccess = require('fs-access')
-var iconv = require('iconv-lite')
-
-var Xdt = function (options) {
+var Xdt = function (content) {
   var RX = new RegExp(
     '^\\r?\\n?' +   // ignore leading newlines
     '(\\d{3})' +   // line length
@@ -21,58 +17,7 @@ var Xdt = function (options) {
     gender: '3110'
   }
 
-  if (typeof options === 'undefined') {
-    options = {}
-  } if (!options.encoding) {
-    options.encoding = 'ISO-8859-15'
-  }
-
-  this.options = options
-  this.watcher = null
-
-  this.open = function (path, callback) {
-    var _this = this
-
-    fsAccess(path, function (err) {
-      if (err) { return callback(err, _this) }
-      fs.readFile(path, function (err, buffer) {
-        if (err) { return callback(err, _this) }
-
-        _this.raw = iconv.decode(buffer, options.encoding)
-        _this.fields = _this.parse()
-        _this.patient = _this.patient()
-        return callback(null, _this)
-      })
-    })
-
-    return this
-  }
-
-  this.fromString = function (content) {
-    this.raw = content
-    this.fields = this.parse()
-    this.patient = this.patient()
-
-    return this
-  }
-
-  this.parse = function () {
-    var match
-    var matches = []
-    while ((match = RX.exec(this.raw)) !== null) {
-      match = {
-        length: parseInt(match[1]),
-        field: match[2],
-        value: match[3]
-      }
-
-      matches.push(match)
-    }
-
-    return matches
-  }
-
-  this.patient = function () {
+  this.parsePatient = function () {
     return {
       id: this.first(FIELDS.id),
       firstName: this.first(FIELDS.firstName),
@@ -101,6 +46,21 @@ var Xdt = function (options) {
 
     return results
   }
+
+  var match
+  var matches = []
+  while ((match = RX.exec(content)) !== null) {
+    match = {
+      length: parseInt(match[1]),
+      field: match[2],
+      value: match[3]
+    }
+
+    matches.push(match)
+  }
+
+  this.fields = matches
+  this.patient = this.parsePatient()
 
   return this
 }
